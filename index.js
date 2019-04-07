@@ -2,7 +2,7 @@ const K = 1.5; // bigger K = face-centered vertices get farther from face
 const ALPHA = 0.3; // bigger ALPHA = vertices on edges get farther from true vertices
 // this is number of vertices across one edge of the square
 const MESH_SIZE = 16;
-const TRANSP = 1;
+
 let LOOP = true;
 
 const canvas = document.getElementById("main");
@@ -15,6 +15,10 @@ scene.registerBeforeRender(() =>
 )
 
 const light = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 1, -10), scene);
+light.diffuse = new BABYLON.Color3(0.5,0.5,0.1);
+const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(4, 10, -3), scene);
+light.diffuse = new BABYLON.Color3(0.1,0.1,0.5);
+
 const root = new BABYLON.TransformNode("root");
 
 root.rotation.z = -0.05;
@@ -22,7 +26,7 @@ root.rotation.x = 0.15;
 
 function renderLoop(){
   root.rotation.y += 0.01 ;
-//  root.rotation.z += 0.013 / 5;
+  root.rotation.z += 0.013 / 5;
   scene.render();
 }
 
@@ -307,7 +311,7 @@ const meshMat = new BABYLON.StandardMaterial("material",scene);
 meshMat.diffuseColor = new BABYLON.Color3(0.8, 0.9, 1.0);
 meshMat.specularColor = new BABYLON.Color3(0.1,0.1,0.1);
 //meshMat.backFaceCulling = false;
-meshMat.alpha = TRANSP;
+// meshMat.alpha = TRANSP;
 
 window.onkeydown = (e) => {
   if (e.keyCode == 65) {
