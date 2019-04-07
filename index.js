@@ -7,15 +7,13 @@ let LOOP = false;
 const canvas = document.getElementById("main");
 const engine = new BABYLON.Engine(canvas);
 const scene = new BABYLON.Scene(engine);
-scene.clearColor = new BABYLON.Color3(0.6,0.6,0.6);
+scene.clearColor = new BABYLON.Color3(219/255, 211/255, 179/255);
 
 scene.registerBeforeRender(() =>
    engine.setHardwareScalingLevel(1.0/window.devicePixelRatio)
 )
 
-//const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene);
-const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 5, -5), scene);
-
+const light = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 5, -5), scene);
 const root = new BABYLON.TransformNode("root");
 
 root.rotation.z = -0.05;
@@ -49,7 +47,7 @@ function mkAxes() {
 function mkSphere(pos) {
   const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 0.03}, scene);
   sphere.material = new BABYLON.StandardMaterial("material",scene);
-  sphere.material.diffuseColor = new BABYLON.Color3(0.1, 0.2, 0.3);
+  sphere.material.diffuseColor = new BABYLON.Color3(1, 0.2, 0.3);
   sphere.position = new BABYLON.Vector3(...pos);
   sphere.parent = root;
 }
@@ -58,12 +56,23 @@ function without(ar, x) {
   return ar.filter(y => y != x);
 }
 
-function forEdge(f) {
+
+function _forEdge(f) {
   [0,1,2].forEach(d1 => {
     without([0,1,2], d1).forEach(d2 => {
       [0,1,2].filter(y => y > d2 && y != d1).forEach(d3 => {
         [-1,1].forEach(i2 => {
           [-1,1].forEach(i3 => {
+            f(d1, d2, d3, i2, i3);
+          });
+        });
+      });
+    });
+  });
+}
+
+function forEdge(f) {
+  _forEdge((d1, d2, d3, i2, i3) => {
             const src = [0,0,0];
             const dst = [0,0,0];
             src[d1] = -1;
@@ -73,10 +82,6 @@ function forEdge(f) {
             dst[d2] = i2;
             dst[d3] = i3;
             f(src, dst);
-          });
-        });
-      });
-    });
   });
 }
 
@@ -144,11 +149,89 @@ function getFrame3() {
   return rv;
 }
 
-// getFrame1().forEach(mkSphere);
-// getFrame2().forEach(mkSphere);
-getFrame3().forEach(([src, dst]) => mkLine(src, dst));
-// mkAxes();
-mkCube();
+function mkMesh1(pts) {
+  const positions = [];
+  const indices = [];
+  for (let i = 0; i < MESH_SIZE; i++) {
+    for (let j = 0; j < MESH_SIZE; j++) {
+      const ix = 3 * ((j * MESH_SIZE) + i);
+      const vert = lerp22(pts, i / (MESH_SIZE - 1), j / (MESH_SIZE - 1));
+      positions[ix] = vert[0];
+      positions[ix + 1] = vert[1];
+      positions[ix + 2] = vert[2];
+    }
+  }
+
+  function vertexAt(u, v) {
+    return v * MESH_SIZE + u;
+  }
+
+  for (let i = 0; i < MESH_SIZE-1; i++) {
+    for (let j = 0; j < MESH_SIZE-1; j++) {
+      const ix = 6 * (j * (MESH_SIZE - 1) + i);
+      // (i,j)---(i+1,j)
+      //     \      |
+      //       \    |
+      //         \  |
+      //         (i+1,j+1)
+      indices[ix] = vertexAt(i, j);
+      indices[ix + 1] = vertexAt(i + 1, j);
+      indices[ix + 2] = vertexAt(i + 1, j + 1);
+      // (i,j)
+      //  |  \
+      //  |    \
+      //  |      \
+      //(i,j+1)--(i+1,j+1)
+      indices[ix + 3] = vertexAt(i,j);
+      indices[ix + 4] = vertexAt(i+1,j+1);
+      indices[ix + 5] = vertexAt(i,j+1);
+    }
+  }
+
+  const mesh = new BABYLON.Mesh("custom", scene);
+  mesh.parent = root;
+  mesh.material = meshMat;
+
+  const normals = [];
+  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+
+  const vertexData = new BABYLON.VertexData();
+  vertexData.positions = positions;
+  vertexData.indices = indices;
+  vertexData.normals = normals;
+
+  vertexData.applyToMesh(mesh);
+}
+
+function lerp22(pts, i, j) {
+  return [0,1,2].map(d =>  {
+    return pts[0][d] * i * j + pts[1][d] * (1-i) * j +
+      pts[2][d] * i * (1-j) + pts[3][d] * (1-i) * (1-j);
+  });
+}
+
+function setupScene() {
+  getFrame1().forEach(mkSphere);
+  getFrame2().forEach(mkSphere);
+  getFrame3().forEach(([src, dst]) => mkLine(src, dst));
+  //mkAxes();
+  mkCube();
+
+//  forEdge((src, dst) => {
+    mkMesh1([[-1, -1, -1 + 2 * ALPHA],
+             [0, -1 + K * ALPHA, 0],
+             [-1 + K * ALPHA, 0, 0],
+             [-1, -1, 1 - 2 * ALPHA]]);
+//  });
+
+  scene.render();
+}
+
+//////////////////////////////////
+
+const meshMat = new BABYLON.StandardMaterial("material",scene);
+meshMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.4);
+meshMat.backFaceCulling = false;
 
 window.onkeydown = (e) => {
   if (e.keyCode == 65) {
@@ -160,89 +243,4 @@ window.onkeydown = (e) => {
   }
 }
 
-
-const pts =
-      [
-        [-1, -1, -1 + 2 * ALPHA],
-        [0, -1 + K * ALPHA, 0],
-        [-1 + K * ALPHA, 0, 0],
-        [-1, -1, 1 - 2 * ALPHA],
-      ];
-
-
-// set up raw mesh vertex data
-
-const positions = [];
-const indices = [];
-
-const meshMat = new BABYLON.StandardMaterial("material",scene);
-meshMat.diffuseColor = new BABYLON.Color3(0.1, 0.2, 0.3);
-meshMat.backFaceCulling = false;
-
-
-for (let i = 0; i < MESH_SIZE; i++) {
-  for (let j = 0; j < MESH_SIZE; j++) {
-    const ix = 3 * ((j * MESH_SIZE) + i);
-    const vert = lerp22(pts, i / (MESH_SIZE - 1), j / (MESH_SIZE - 1));
-    positions[ix] = vert[0];
-    positions[ix + 1] = vert[1];
-    positions[ix + 2] = vert[2];
-  }
-}
-
-function vertexAt(u, v) {
-  return v * MESH_SIZE + u;
-}
-
-for (let i = 0; i < MESH_SIZE-1; i++) {
-  for (let j = 0; j < MESH_SIZE-1; j++) {
-    const ix = 6 * (j * (MESH_SIZE - 1) + i);
-    // (i,j)---(i+1,j)
-    //     \      |
-    //       \    |
-    //         \  |
-    //         (i+1,j+1)
-    indices[ix] = vertexAt(i, j);
-    indices[ix + 1] = vertexAt(i + 1, j);
-    indices[ix + 2] = vertexAt(i + 1, j + 1);
-    // (i,j)
-    //  |  \
-    //  |    \
-    //  |      \
-    //(i,j+1)--(i+1,j+1)
-    indices[ix + 3] = vertexAt(i,j);
-    indices[ix + 4] = vertexAt(i+1,j+1);
-    indices[ix + 5] = vertexAt(i,j+1);
-  }
-}
-
-//console.log(positions);
-//console.log(indices);
-const customMesh = new BABYLON.Mesh("custom", scene);
-customMesh.parent = root;
-customMesh.material = meshMat;
-
-//Empty array to contain calculated values or normals added
-const normals = [];
-
-//Calculations of normals added
-BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-
-
-const vertexData = new BABYLON.VertexData();
-
-vertexData.positions = positions;
-vertexData.indices = indices;
-vertexData.normals = normals; //Assignment of normal to vertexData added
-
-
-vertexData.applyToMesh(customMesh);
-
-
-function lerp22(pts, i, j) {
-  return [0,1,2].map(d =>  {
-    return pts[0][d] * i * j + pts[1][d] * (1-i) * j +
-      pts[2][d] * i * (1-j) + pts[3][d] * (1-i) * (1-j);
-  });
-}
-scene.render();
+setupScene();
