@@ -59,6 +59,23 @@ function without(ar, x) {
 }
 
 
+function forFaceVertexPair(f) {
+  [0,1,2].forEach(d1 => { //  choice of face direction
+    [-1,1].forEach(i1 => { // choice of face side
+      without([0,1,2], d1).forEach(d2 => { // vertex dimension 1
+        [0,1,2].filter(y => y > d2 && y != d1).forEach(d3 => { // vertex dimension 2
+          [-1,1].forEach(i2 => {
+            [-1,1].forEach(i3 => {
+              f(d1, i1, d2, i2, d3, i3);
+            });
+          });
+        });
+      });
+    });
+  });
+
+}
+
 function _forEdge(f) {
   [0,1,2].forEach(d1 => {
     without([0,1,2], d1).forEach(d2 => {
@@ -277,4 +294,5 @@ window.onkeydown = (e) => {
   }
 }
 
+// forFaceVertexPair((d1, i1, d2, i2, d3, i3) => console.log(d1, i1, d2, i2, d3, i3));
 setupScene();
