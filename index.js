@@ -169,23 +169,23 @@ function mkMesh1(pts) {
 
   for (let i = 0; i < MESH_SIZE-1; i++) {
     for (let j = 0; j < MESH_SIZE-1; j++) {
-      const ix = 6 * (j * (MESH_SIZE - 1) + i);
       // (i,j)---(i+1,j)
       //     \      |
       //       \    |
       //         \  |
       //         (i+1,j+1)
-      indices[ix] = vertexAt(i, j);
-      indices[ix + 1] = vertexAt(i + 1, j);
-      indices[ix + 2] = vertexAt(i + 1, j + 1);
+      indices.push(vertexAt(i, j));
+      indices.push(vertexAt(i + 1, j));
+      indices.push(vertexAt(i + 1, j + 1));
+
       // (i,j)
       //  |  \
       //  |    \
       //  |      \
       //(i,j+1)--(i+1,j+1)
-      indices[ix + 3] = vertexAt(i,j);
-      indices[ix + 4] = vertexAt(i+1,j+1);
-      indices[ix + 5] = vertexAt(i,j+1);
+      indices.push(vertexAt(i,j));
+      indices.push(vertexAt(i+1,j+1));
+      indices.push(vertexAt(i,j+1));
     }
   }
 
@@ -229,9 +229,9 @@ function setupScene() {
     pts[0][d2] = i2;
     pts[0][d3] = i3;
 
-    pts[1][d2] = i2 * (1 - K*ALPHA);
+    pts[1][d2] = i2 * (1 - K * ALPHA);
 
-    pts[2][d3] = i3 * (1 - K*ALPHA);
+    pts[2][d3] = i3 * (1 - K * ALPHA);
 
     pts[3][d1] = 1 - 2 * ALPHA;
     pts[3][d2] = i2;
@@ -249,8 +249,8 @@ function setupScene() {
 
 const meshMat = new BABYLON.StandardMaterial("material",scene);
 meshMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 1.0);
-//meshMat.backFaceCulling = false;
-meshMat.alpha = 0.5;
+meshMat.backFaceCulling = false;
+//meshMat.alpha = 0.5;
 
 window.onkeydown = (e) => {
   if (e.keyCode == 65) {
