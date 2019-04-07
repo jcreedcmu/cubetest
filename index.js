@@ -1,7 +1,7 @@
 const K = 1.5; // bigger K = face-centered vertices get farther from face
 const ALPHA = 0.2; // bigger ALPHA = vertices on edges get farther from true vertices
 // this is number of vertices across one edge of the square
-const MESH_SIZE = 10;
+const MESH_SIZE = 16;
 let LOOP = false;
 
 const canvas = document.getElementById("main");
@@ -189,19 +189,31 @@ function mkMesh1(pts) {
     }
   }
 
-  const mesh = new BABYLON.Mesh("custom", scene);
-  mesh.parent = root;
-  mesh.material = meshMat;
-
   const normals = [];
   BABYLON.VertexData.ComputeNormals(positions, indices, normals);
 
+  const mesh = new BABYLON.Mesh("custom", scene);
+  mesh.parent = root;
+  mesh.material = meshMat;
   const vertexData = new BABYLON.VertexData();
   vertexData.positions = positions;
   vertexData.indices = indices;
   vertexData.normals = normals;
-
   vertexData.applyToMesh(mesh);
+
+  const mesh2 = new BABYLON.Mesh("custom", scene);
+  mesh2.parent = root;
+  mesh2.material = meshMat;
+  const vertexData2 = new BABYLON.VertexData();
+  vertexData2.positions = positions;
+  vertexData2.indices = indices.map((x, i) => {
+    if (i % 3 == 1) return indices[i+1];
+    if (i % 3 == 2) return indices[i-1];
+    return indices[i];
+  });
+  vertexData2.normals = normals.map(n => -n);
+  vertexData2.applyToMesh(mesh2);
+
 }
 
 function lerp22(pts, i, j) {
@@ -212,9 +224,10 @@ function lerp22(pts, i, j) {
 }
 
 function setupScene() {
-  getFrame1().forEach(mkSphere);
-  getFrame2().forEach(mkSphere);
-  getFrame3().forEach(([src, dst]) => mkLine(src, dst));
+//  getFrame1().forEach(mkSphere);
+//  getFrame2().forEach(mkSphere);
+//  getFrame3().forEach(([src, dst]) => mkLine(src, dst));
+
   //mkAxes();
   mkCube();
 
@@ -249,8 +262,8 @@ function setupScene() {
 
 const meshMat = new BABYLON.StandardMaterial("material",scene);
 meshMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 1.0);
-meshMat.backFaceCulling = false;
-//meshMat.alpha = 0.5;
+//meshMat.backFaceCulling = false;
+meshMat.alpha = 0.5;
 
 window.onkeydown = (e) => {
   if (e.keyCode == 65) {
