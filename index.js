@@ -47,7 +47,7 @@ function mkAxes() {
 }
 
 function mkSphere(pos) {
-  const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 0.025}, scene);
+  const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 0.03}, scene);
   sphere.material = new BABYLON.StandardMaterial("material",scene);
   sphere.material.diffuseColor = new BABYLON.Color3(0.1, 0.2, 0.3);
   sphere.position = new BABYLON.Vector3(...pos);
@@ -144,14 +144,38 @@ function getFrame3() {
   return rv;
 }
 
-getFrame1().forEach(mkSphere);
-getFrame2().forEach(mkSphere);
+// getFrame1().forEach(mkSphere);
+// getFrame2().forEach(mkSphere);
 getFrame3().forEach(([src, dst]) => mkLine(src, dst));
 // mkAxes();
 mkCube();
 scene.render();
 
-window.onkeydown = () => {
-  console.log("WHAT");
-  LOOP = !LOOP;
+window.onkeydown = (e) => {
+  if (e.keyCode == 65)
+    LOOP = !LOOP;
+}
+
+
+const _pts =
+      [
+        [-1 + K * ALPHA, 0, 0],
+        [0, -1 + K * ALPHA, 0],
+        [-1, -1, -1 + 2 * ALPHA],
+        [-1, -1, 1 - 2 * ALPHA],
+      ];
+
+const pts = [_pts[2], _pts[1], _pts[0], _pts[3]];
+
+for (let i = 0; i < 16; i++) {
+  for (let j = 0; j < 16; j++) {
+    mkSphere(lerp22(pts, i / 15, j / 15));
+  }
+}
+
+function lerp22(pts, i, j) {
+  return [0,1,2].map(d =>  {
+    return pts[0][d] * i * j + pts[1][d] * (1-i) * j +
+      pts[2][d] * i * (1-j) + pts[3][d] * (1-i) * (1-j);
+  });
 }
