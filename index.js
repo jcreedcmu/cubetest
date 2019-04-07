@@ -1,7 +1,8 @@
 const K = 1.5; // bigger K = face-centered vertices get farther from face
-const ALPHA = 0.2; // bigger ALPHA = vertices on edges get farther from true vertices
+const ALPHA = 0.1; // bigger ALPHA = vertices on edges get farther from true vertices
 // this is number of vertices across one edge of the square
 const MESH_SIZE = 16;
+const TRANSP = 0.1;
 let LOOP = false;
 
 const canvas = document.getElementById("main");
@@ -150,7 +151,31 @@ function getFrame3() {
   return rv;
 }
 
-function mkMesh1(pts) {
+function mkDoubleMesh(positions, indices, normals, parent, material) {
+  const mesh = new BABYLON.Mesh("custom", scene);
+  mesh.parent = parent;
+  mesh.material = material;
+  const vertexData = new BABYLON.VertexData();
+  vertexData.positions = positions;
+  vertexData.indices = indices;
+  vertexData.normals = normals;
+  vertexData.applyToMesh(mesh);
+
+  const mesh2 = new BABYLON.Mesh("custom", scene);
+  mesh2.parent = parent;
+  mesh2.material = material;
+  const vertexData2 = new BABYLON.VertexData();
+  vertexData2.positions = positions;
+  vertexData2.indices = indices.map((x, i) => {
+    if (i % 3 == 1) return indices[i+1];
+    if (i % 3 == 2) return indices[i-1];
+    return indices[i];
+  });
+  vertexData2.normals = normals.map(n => -n);
+  vertexData2.applyToMesh(mesh2);
+}
+
+function mkMesh1(pts, material) {
   const positions = [];
   const indices = [];
   for (let i = 0; i < MESH_SIZE; i++) {
@@ -192,28 +217,7 @@ function mkMesh1(pts) {
   const normals = [];
   BABYLON.VertexData.ComputeNormals(positions, indices, normals);
 
-  const mesh = new BABYLON.Mesh("custom", scene);
-  mesh.parent = root;
-  mesh.material = meshMat;
-  const vertexData = new BABYLON.VertexData();
-  vertexData.positions = positions;
-  vertexData.indices = indices;
-  vertexData.normals = normals;
-  vertexData.applyToMesh(mesh);
-
-  const mesh2 = new BABYLON.Mesh("custom", scene);
-  mesh2.parent = root;
-  mesh2.material = meshMat;
-  const vertexData2 = new BABYLON.VertexData();
-  vertexData2.positions = positions;
-  vertexData2.indices = indices.map((x, i) => {
-    if (i % 3 == 1) return indices[i+1];
-    if (i % 3 == 2) return indices[i-1];
-    return indices[i];
-  });
-  vertexData2.normals = normals.map(n => -n);
-  vertexData2.applyToMesh(mesh2);
-
+  mkDoubleMesh(positions, indices, normals, root, material);
 }
 
 function lerp22(pts, i, j) {
@@ -226,7 +230,7 @@ function lerp22(pts, i, j) {
 function setupScene() {
 //  getFrame1().forEach(mkSphere);
 //  getFrame2().forEach(mkSphere);
-//  getFrame3().forEach(([src, dst]) => mkLine(src, dst));
+  getFrame3().forEach(([src, dst]) => mkLine(src, dst, [0.5,0.5,0]));
 
   //mkAxes();
   mkCube();
@@ -250,9 +254,7 @@ function setupScene() {
     pts[3][d2] = i2;
     pts[3][d3] = i3;
 
-
-
-    mkMesh1(pts);
+    mkMesh1(pts, meshMat);
  });
 
   scene.render();
@@ -263,7 +265,7 @@ function setupScene() {
 const meshMat = new BABYLON.StandardMaterial("material",scene);
 meshMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 1.0);
 //meshMat.backFaceCulling = false;
-meshMat.alpha = 0.5;
+meshMat.alpha = TRANSP;
 
 window.onkeydown = (e) => {
   if (e.keyCode == 65) {
