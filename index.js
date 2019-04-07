@@ -1,9 +1,9 @@
 const K = 1.5; // bigger K = face-centered vertices get farther from face
-const ALPHA = 0.1; // bigger ALPHA = vertices on edges get farther from true vertices
+const ALPHA = 0.3; // bigger ALPHA = vertices on edges get farther from true vertices
 // this is number of vertices across one edge of the square
 const MESH_SIZE = 16;
-const TRANSP = 0.7;
-let LOOP = false;
+const TRANSP = 1;
+let LOOP = true;
 
 const canvas = document.getElementById("main");
 const engine = new BABYLON.Engine(canvas);
@@ -274,13 +274,29 @@ function setupScene() {
     mkMesh1(pts, meshMat);
   });
 
-  forFaceVertexPair((d1, i1, d2, i2, d3, i3) => { });
-  mkMesh1([
-    [-1, -1, -(1 - 2 * ALPHA)],
-    [0, -1 + K * ALPHA, 0],
-    [0, -1 - K * ALPHA, 0],
-    [-(1 - 2 * ALPHA), -1, -1],
-  ], meshMat);
+  forFaceVertexPair((d1, i1, d2, i2, d3, i3) => {
+    const pts = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
+
+    pts[0][d1] = i1;
+    pts[0][d2] = i2;
+    pts[0][d3] = i3 * (1 - 2 * ALPHA);
+
+    pts[1][d1] = i1 * (1 - K * ALPHA);
+
+    pts[2][d1] = i1 * (1 + K * ALPHA);
+
+    pts[3][d1] = i1;
+    pts[3][d2] = i2 * (1 - 2 * ALPHA);
+    pts[3][d3] = i3;
+
+    // [
+    // [-1, -1, -(1 - 2 * ALPHA)],
+    // [0, -1 + K * ALPHA, 0],
+    // [0, -1 - K * ALPHA, 0],
+    // [-(1 - 2 * ALPHA), -1, -1],
+    // ]
+    mkMesh1(pts, meshMat);
+  });
 
   scene.render();
 }
@@ -303,5 +319,5 @@ window.onkeydown = (e) => {
   }
 }
 
-// forFaceVertexPair((d1, i1, d2, i2, d3, i3) => console.log(d1, i1, d2, i2, d3, i3));
 setupScene();
+engine.runRenderLoop(renderLoop);
