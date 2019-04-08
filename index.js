@@ -23,14 +23,20 @@ const root = new BABYLON.TransformNode("root");
 
 root.rotation.z = -0.05;
 root.rotation.x = 0.15;
-
+const v = {x:0, y:0, z:0, theta:0};
 function renderLoop(){
-  root.rotation.y += 0.01 ;
-  root.rotation.z += 0.013 / 5;
+  camera.rotation.y += v.theta;
+  camera.position.x += v.x;
+  camera.position.y += v.y;
+  camera.position.z += v.z;
+//  root.rotation.y += 0.01 ;
+//  root.rotation.z += 0.013 / 5;
   scene.render();
 }
 
-const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0,0.2,-5),scene);
+const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0,0,-5),scene);
+camera.minZ = 0.01;
+camera.fov = 1.2;
 
 function mkLine(a, b, c) {
   const x = BABYLON.MeshBuilder.CreateLines("lines", {points: [
@@ -315,12 +321,26 @@ meshMat.specularColor = new BABYLON.Color3(0.1,0.1,0.1);
 
 window.onkeydown = (e) => {
   if (e.keyCode == 65) {
-    LOOP = !LOOP;
-    if (LOOP)
-      engine.runRenderLoop(renderLoop);
-    else
-      engine.stopRenderLoop();
+    v.theta = -0.01;
   }
+  else if (e.keyCode == 68) {
+    v.theta = 0.01;
+  }
+  else if (e.keyCode == 87) {
+    v.x = Math.sin(camera.rotation.y) * 0.01;
+    v.z = Math.cos(camera.rotation.y) * 0.01;
+  }
+
+  else {
+    console.log(e.keyCode);
+  }
+}
+
+window.onkeyup = (e) => {
+  v.x = 0;
+  v.y = 0;
+  v.z = 0;
+  v.theta = 0;
 }
 
 setupScene();
