@@ -1,9 +1,10 @@
-const K = 1.5; // bigger K = face-centered vertices get farther from face
-const ALPHA = 0.3; // bigger ALPHA = vertices on edges get farther from true vertices
+const K = 1; // bigger K = face-centered vertices get farther from face
+const ALPHA = 0.25; // bigger ALPHA = vertices on edges get farther from true vertices
 // this is number of vertices across one edge of the square
 const MESH_SIZE = 16;
 
 let LOOP = true;
+let SPIN = true;
 
 const canvas = document.getElementById("main");
 const engine = new BABYLON.Engine(canvas);
@@ -29,7 +30,9 @@ function renderLoop(){
   camera.position.x += v.x;
   camera.position.y += v.y;
   camera.position.z += v.z;
-//  root.rotation.y += 0.01 ;
+
+  if (SPIN)
+    root.rotation.y += 0.01 ;
 //  root.rotation.z += 0.013 / 5;
   scene.render();
 }
@@ -202,7 +205,7 @@ function mkDoubleMesh(positions, indices, normals, parent, material) {
   vertexData2.applyToMesh(mesh2);
 }
 
-function mkMesh1(pts, material) {
+function mkHyperb(pts, material, parent) {
   const positions = [];
   const indices = [];
   for (let i = 0; i < MESH_SIZE; i++) {
@@ -244,7 +247,7 @@ function mkMesh1(pts, material) {
   const normals = [];
   BABYLON.VertexData.ComputeNormals(positions, indices, normals);
 
-  mkDoubleMesh(positions, indices, normals, root, material);
+  mkDoubleMesh(positions, indices, normals, parent, material);
 }
 
 function lerp22(pts, i, j) {
@@ -254,14 +257,7 @@ function lerp22(pts, i, j) {
   });
 }
 
-function setupScene() {
-//  getFrame1().forEach(mkSphere);
-//  getFrame2().forEach(mkSphere);
-  getFrame3().forEach(([src, dst]) => mkLine(src, dst, [0.5,0.5,0]));
-
-  //mkAxes();
-  mkCube();
-
+function mkWideFaces(parent) {
   _forEdge((d1, d2, d3, i2, i3) => {
     const pts = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
     // [[-1, -1, -1 + 2 * ALPHA],
@@ -281,10 +277,13 @@ function setupScene() {
     pts[3][d2] = i2;
     pts[3][d3] = i3;
 
-    mkMesh1(pts, meshMat);
+    mkHyperb(pts, meshMat, parent);
   });
+}
 
+function mkNarrowFaces(parent) {
   forFaceVertexPair((d1, i1, d2, i2, d3, i3) => {
+    if (i1 == -1) return;
     const pts = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
     pts[0][d1] = i1;
@@ -305,8 +304,33 @@ function setupScene() {
     // [0, -1 - K * ALPHA, 0],
     // [-(1 - 2 * ALPHA), -1, -1],
     // ]
-    mkMesh1(pts, meshMat);
+    mkHyperb(pts, meshMat, parent);
   });
+}
+
+function setupScene() {
+//  getFrame1().forEach(mkSphere);
+//  getFrame2().forEach(mkSphere);
+//  getFrame3().forEach(([src, dst]) => mkLine(src, dst, [0.5,0.5,0]));
+
+  //mkAxes();
+//  mkCube();
+
+  [0,1].forEach(i => {
+    [0,1].forEach(j => {
+      [0,1].forEach(k => {
+        const off = new BABYLON.TransformNode("off");
+        off.parent = root;
+        off.position = new BABYLON.Vector3(i * 2 - 1, j * 2 - 1, k * 2 - 1);
+
+        mkWideFaces(off);
+        mkNarrowFaces(off);
+
+      });
+    });
+  });
+
+
 
   scene.render();
 }
@@ -320,17 +344,48 @@ meshMat.specularColor = new BABYLON.Color3(0.1,0.1,0.1);
 // meshMat.alpha = TRANSP;
 
 window.onkeydown = (e) => {
+  if (e.keyCode == 27) {
+    LOOP = !LOOP;
+    if (LOOP)
+      engine.runRenderLoop(renderLoop);
+    else
+      engine.stopRenderLoop();
+  }
+  if (e.keyCode == 32) {
+    SPIN = !SPIN;
+  }
   if (e.keyCode == 65) {
-    v.theta = -0.01;
+    if (e.shiftKey) { // strafe
+      v.x = -Math.cos(camera.rotation.y) * 0.02;
+      v.z = Math.sin(camera.rotation.y) * 0.02;
+    }
+    else {
+      v.theta = -0.02;
+    }
   }
   else if (e.keyCode == 68) {
-    v.theta = 0.01;
+    if (e.shiftKey) { // strafe
+      v.x = Math.cos(camera.rotation.y) * 0.02;
+      v.z = -Math.sin(camera.rotation.y) * 0.02;
+    }
+    else {
+      v.theta = 0.02;
+    }
   }
   else if (e.keyCode == 87) {
-    v.x = Math.sin(camera.rotation.y) * 0.01;
-    v.z = Math.cos(camera.rotation.y) * 0.01;
+    v.x = Math.sin(camera.rotation.y) * 0.02;
+    v.z = Math.cos(camera.rotation.y) * 0.02;
   }
-
+  else if (e.keyCode == 83) {
+    v.x = -Math.sin(camera.rotation.y) * 0.02;
+    v.z = -Math.cos(camera.rotation.y) * 0.02;
+  }
+  else if (e.keyCode == 219) {
+    v.y = -0.02;
+  }
+  else if (e.keyCode == 221) {
+    v.y = 0.02;
+  }
   else {
     console.log(e.keyCode);
   }
