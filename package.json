@@ -1,0 +1,28 @@
+{
+  "name": "cubetest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "webpack --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jcreedcmu/cubetest.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jcreedcmu/cubetest/issues"
+  },
+  "homepage": "https://github.com/jcreedcmu/cubetest#readme",
+  "dependencies": {
+    "typescript": "^3.4.2"
+  },
+  "devDependencies": {
+    "ts-loader": "^5.3.3",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0"
+  }
+}
