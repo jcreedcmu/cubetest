@@ -91,8 +91,9 @@ class App {
     const { d, t, wsize } = this;
     d.clearRect(0, 0, wsize.x, wsize.y);
 
-    const level = Math.sin(t * 0.1);
+    const level = Math.sin(t * 0.01);
 
+    d.fillText(level + '', 100, 100);
     d.strokeStyle = "#40cfcf";
     d.lineWidth = 0.5;
     [-3, -1, 1].forEach(i => {
@@ -103,36 +104,64 @@ class App {
     });
 
     function proj(p: Point3d): Point {
-      return { x: p[0] + p[1] * level * 0.5, y: p[2] };
+      return { x: p[0] + p[1] * level * 0.05, y: p[2] };
     }
 
-    d.strokeStyle = "black";
-    d.lineWidth = 0.5;
+    // if our quad is the four points (A, B, C, D)
+    // we are going to draw the parametric surface
+    //     P = uvA  + u'vB + uv'C + u'v'D
+    // for u ∈ [0,1], v ∈ [0,1]
+    // where u' = 1 - u and v' = 1 - v.
 
-    wideFaces.forEach((face, i) => {
-      if (1) {
-        d.beginPath();
-        this.m_moveTo(d, proj(face[0]));
-        this.m_lineTo(d, proj(face[1]));
-        this.m_lineTo(d, proj(face[3]));
-        this.m_lineTo(d, proj(face[2]));
-        d.closePath();
-        d.stroke();
+    // Assuming we fix some y ∈ [-1,1], what are the x and z values we
+    // should draw? Let's say we know u as well, and try to solve for v.
+    // y = P₂ = uvA₂  + u'vB₂ + uv'C₂ + u'v'D₂
+    // y = v(uA₂  + u'B₂ - uC₂ - u'D₂) + uC₂ + u'D₂
+    // v = (y - (uC₂ + u'D₂)) / (uA₂  + u'B₂ - (uC₂ + u'D₂))
+
+    const drawQuad = (face: Quad) => {
+      d.strokeStyle = "gray";
+      d.lineWidth = 0.5;
+      d.beginPath();
+      this.m_moveTo(d, proj(face[0]));
+      this.m_lineTo(d, proj(face[1]));
+      this.m_lineTo(d, proj(face[3]));
+      this.m_lineTo(d, proj(face[2]));
+      d.closePath();
+      d.stroke();
+
+      d.strokeStyle = color;
+      d.lineWidth = 1;
+      const STEPS = 40;
+      d.beginPath();
+      let prevPoint = false;
+      for (let i = 0; i <= STEPS; i++) {
+        const u = i / STEPS;
+        const y = level;
+        const v = (y - (u * face[2][1] + (1 - u) * face[3][1])) /
+          ((u * face[0][1] + (1 - u) * face[1][1])
+            - (u * face[2][1] + (1 - u) * face[3][1]));
+        if (v < 0 || v > 1) { prevPoint = false; continue; }
+        const pt = {
+          x: u * v * face[0][0] + (1 - u) * v * face[1][0] +
+            u * (1 - v) * face[2][0] + (1 - u) * (1 - v) * face[3][0],
+          y: u * v * face[0][2] + (1 - u) * v * face[1][2] +
+            u * (1 - v) * face[2][2] + (1 - u) * (1 - v) * face[3][2],
+        };
+        if (prevPoint)
+          this.m_lineTo(d, pt);
+        else {
+          this.m_moveTo(d, pt); prevPoint = true;
+        }
       }
-    });
+      d.stroke();
+    }
 
-    narrowFaces.forEach((face, i) => {
-      if (1) {
-        d.beginPath();
-        this.m_moveTo(d, proj(face[0]));
-        this.m_lineTo(d, proj(face[1]));
-        this.m_lineTo(d, proj(face[3]));
-        this.m_lineTo(d, proj(face[2]));
-        d.closePath();
-        d.stroke();
-      }
-    });
 
+    let color = "red";
+    wideFaces.forEach(drawQuad);
+    color = "blue";
+    narrowFaces.forEach(drawQuad);
   }
 
   step() {
